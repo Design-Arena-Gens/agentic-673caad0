@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Image Upscaler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8eaff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        select, button {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select {
+            background: white;
+            color: #333;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .preview-area {
+            display: none;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .preview-area.active {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .preview-box {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .preview-box h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .preview-box canvas {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-box .info {
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .progress-container {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+
+        .status-text {
+            text-align: center;
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .download-btn {
+            display: none;
+            margin: 20px auto 0;
+            padding: 15px 40px;
+        }
+
+        .download-btn.active {
+            display: block;
+        }
+
+        .stats {
+            display: none;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stats.active {
+            display: grid;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .preview-area.active {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Advanced Image Upscaler</h1>
+        <p class="subtitle">Browser-based AI-enhanced upscaling with advanced processing • 100% offline</p>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📸</div>
+            <div class="upload-text">Click to upload or drag & drop</div>
+            <div class="upload-hint">Supports JPG, PNG, WebP • No file size limits</div>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="upscaleMethod">Algorithm:</label>
+                <select id="upscaleMethod">
+                    <option value="lanczos">Lanczos (Best Quality)</option>
+                    <option value="bicubic">Bicubic (Balanced)</option>
+                    <option value="bilinear">Bilinear (Fast)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="scaleFactor">Scale Factor:</label>
+                <select id="scaleFactor">
+                    <option value="2">2× (Double)</option>
+                    <option value="3">3× (Triple)</option>
+                    <option value="4">4× (Quadruple)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="sharpening">Sharpening:</label>
+                <select id="sharpening">
+                    <option value="0">None</option>
+                    <option value="0.3">Light</option>
+                    <option value="0.6" selected>Medium</option>
+                    <option value="1.0">Strong</option>
+                </select>
+            </div>
+
+            <button id="processBtn" disabled>🎨 Upscale Image</button>
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            <div class="status-text" id="statusText">Initializing...</div>
+        </div>
+
+        <div class="preview-area" id="previewArea">
+            <div class="preview-box">
+                <h3>Original Image</h3>
+                <canvas id="originalCanvas"></canvas>
+                <div class="info" id="originalInfo"></div>
+            </div>
+            <div class="preview-box">
+                <h3>Upscaled Result</h3>
+                <canvas id="resultCanvas"></canvas>
+                <div class="info" id="resultInfo"></div>
+            </div>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-box">
+                <div class="stat-label">Processing Time</div>
+                <div class="stat-value" id="processingTime">-</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Resolution Increase</div>
+                <div class="stat-value" id="resolutionIncrease">-</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">File Size</div>
+                <div class="stat-value" id="fileSize">-</div>
+            </div>
+        </div>
+
+        <button class="download-btn" id="downloadBtn">⬇️ Download Upscaled Image</button>
+    </div>
+
+    <script src="upscaler.js"></script>
+</body>
+</html>
